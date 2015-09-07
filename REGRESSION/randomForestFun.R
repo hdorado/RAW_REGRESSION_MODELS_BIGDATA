@@ -1,0 +1,200 @@
+## All subsequent models are then run in parallel
+
+randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,nb.it = 100,wid=500,hei=800,ab=7,iz=4.1,ar=4.1,de=2.1,ncores=21)
+{
+
+  
+  sfInit(parallel=T,cpus=ncores)
+  sfLibrary(caret)
+  sfLibrary(party)
+  
+  dirDataSet <- paste0(dirLocation,variety,"/DATA_SETS/",variety,"_complet.csv")
+  dirSave    <- paste0(dirLocation,variety,"/RANDOM_FOREST/")  
+  
+  dataSets   <- lapply(dirDataSet,function(x){read.csv(x,row.names=1)})
+  
+  cat(paste("random Forest with Conditional Importance:\n"))
+  
+  cForestCaret <- function(x)
+  {  
+    setseed <- .Random.seed[1:nb.it]
+    nOutPut <- ncol(data)
+    
+    #  pb <- winProgressBar(title="Progress bar", label="0% done", min=0, max=100, initial=0)    
+    
+    
+    
+    #  info <- sprintf("%d%% done", round((i/(nb.it)*100)))
+    # setWinProgressBar(pb, paste(i/(nb.it)*100), label=info)
+    
+    inTrain <- createDataPartition(y=data[,nOutPut], p=0.7, list=F)
+    training <- data[inTrain,]
+    testing <- data[-inTrain,]
+    
+    
+    
+    grid <- expand.grid(mtry=round((ncol(training)-1)/3))
+    
+    
+    model <- train(training[,-ncol(training)], training[,nOutPut],
+                   method="rf", tuneGrid=grid,importance = TRUE,ntree = 2000)
+    
+    performance <- R2(predict(model, testing), testing[,nOutPut]) * 100
+    
+    vaRelevance <- varImp(model, scale=T)$importance
+    
+    return(list(model,performance,vaRelevance))
+    
+  }
+  # close(pb) 
+  sfExport("cForestCaret")
+  
+  sfExport("nb.it")
+  
+  for(j in 1:length(variety))
+  { 
+    
+
+    cat(paste(j,"- Variety:",variety[j],"\n"))
+    
+    data0 <- dataSets[[j]]
+    nvz <- nearZeroVar(data0)
+    if(length(nvz)==0){data <- data0}else{data <- data0[,-nvz] }
+    v <- integer()
+    
+    profiles <- list()
+    length(profiles) <- length(names(data)[-ncol(data)])
+    names(profiles) <- names(data)[-ncol(data)]
+
+   
+    sfExport("data")
+  
+
+    
+    cat(paste("Running ", nb.it, "models in cross validation\n"))
+    
+    Sys.time()->start
+    cForestModels <- sfLapply(1:nb.it,cForestCaret)
+    print(Sys.time()-start)
+    
+    allModels <- lapply(cForestModels,function(x){x[[1]]})
+    #allRMSE   <- unlist(lapply(allModelsAndRMSE,function(x){x[[2]]}))
+    performance     <- unlist(lapply(cForestModels,function(x){x[[2]]}))
+    relevances    <- lapply(cForestModels,function(x){x[[3]]})
+    
+    
+    currentVarImp <- do.call(cbind,relevances)
+    
+    #sort(apply(do.call(cbind,currentVarImp),1,mean),decreasing = T)
+    
+    scale <- performance / as.numeric(apply(currentVarImp,2,sum))
+    
+    
+    scaledVarImp <-  t(t(currentVarImp) * scale)
+    
+    ord <- list(0) ; for(k in 1:ncol(scaledVarImp)){ord[[k]] <- scaledVarImp[,k]}
+    ordered <- lapply(ord,function(x){sort(x,decreasing = T)})
+    
+    
+    
+    princVar <- lapply(ordered,function(x){names(x)[1:3]})
+    
+    cat(paste("Computing profiles\n"))
+
+    #profilesList <- sfLapply(1:100,function(x){ profLis <- list(0,0,0);names(profLis) <- princVar[[x]] ;for(n in princVar[[x]]){ profil <- profilePlot(allModels[[x]], n, data, F) ; profLis[[n]] <- data.frame(profil$y) ; row.names(profLis[[n]]) <- profil$x };return(profLis)})    
+    
+    Sys.time()->star
+    profilesList <- lapply(1:nb.it,function(x){ profLis <- list(0,0,0);names(profLis) <- princVar[[x]] ;for(n in princVar[[x]]){ profil <- profilePlot(allModels[[x]], n, data, F) ; profLis[[n]] <- data.frame(profil$y) ; row.names(profLis[[n]]) <- profil$x };return(profLis)})    
+    print(Sys.time()-start)
+
+    
+    
+    for(z in  1:length(ordered))
+    {  
+      
+      toProfile <- profilesList[[z]]
+      
+      for(n in names(toProfile)) {
+        
+        profile <- toProfile[n]
+        
+        if(length(profiles[[n]]) == 0) {
+          
+          profiles[[n]] <- as.data.frame(profile)
+          
+          #names(profiles)[n] <- n
+          #row.names(profiles[[n]]) <- profile$x
+          
+        } else {
+          profiles[[n]] <- cbind(profiles[[n]],as.data.frame(profile))
+        }
+      }
+    }
+    
+    
+ 
+    
+    
+    
+    v <- as.data.frame(scaledVarImp)
+    write.csv(v,paste0(dirSave[j],"weighMatrix.csv"))
+    ordered <- sort(apply(v,1, median), decreasing=F)
+    
+    
+    perf1 <- signif(sum(performance) / nb.it, 5)
+    
+    se <- apply(v, 1, function(x){ 1.96*sd(x, na.rm=TRUE)/sqrt(ncol(v))})
+    se <- data.frame(se,names(se))
+    names(se) <- c("se","Variable")
+    
+    
+    
+    mean <- as.data.frame(ordered)
+    mean <- cbind(mean, names(ordered))
+    names(mean) <- c("Mean", "Variable")
+    mean$Variable <- factor(names(ordered), levels= names(ordered))
+    
+    stadistc <- merge(se,mean,by.x="Variable",by.y="Variable")
+    
+    
+    stadistc <- stadistc[order(stadistc$Mean,decreasing=F),]
+    
+    
+
+
+
+    errBars <- transform(stadistc, lower=Mean-se,upper=Mean+se )
+   
+    
+    png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei, pointsize = 20)
+    m <- ggplot(mean, aes(x=Variable, y=Mean))
+    m <- m + geom_bar(stat="identity", width=0.5, fill="slategray1") + ylab("Mean importance")+
+      geom_errorbar(aes(ymax = lower, ymin=upper), width=0.25,data=errBars) + coord_flip() +
+      theme_bw() +
+      ggtitle(paste("Importance of variables (with a mean R2 of", perf1, "%)")) +
+      theme(plot.title = element_text(size = 10, face = "bold", colour = "black", vjust = 1.5))
+    suppressWarnings(print(m))
+    dev.off()
+    
+    namSort <- names(sort(ordered,decreasing = T)) 
+    
+    profData     <- unlist(lapply(profiles,function(x){!is.null(x)}))
+    profRealData <- names(profData)[profData]
+    
+    limProf <- if(length(profRealData) < 5){ length(profRealData)}else{5}
+    
+    for(i in 1:limProf)
+    {
+      if(!is.null(unlist(profiles[namSort[i]])))
+      {  
+        png(paste0(dirSave[j],"MultiProfile_",namSort[i],".png"),width = hei , hei = wid, pointsize = 20)
+        multiProfile(data,profiles,namSort[i])
+        dev.off()
+      } else{print(paste("Few profiles references for:",namSort[i]))}
+    }
+    if(saveWS==T){save(list = ls(all = TRUE), file = paste0(dirSave[j],"workSpace.RData"))}else{}
+  
+
+  }
+  sfStop()
+}

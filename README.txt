@@ -1,0 +1,1 @@
+Metodos de regresión y procesamiento de datos utilizados en análisis de datos comerciales

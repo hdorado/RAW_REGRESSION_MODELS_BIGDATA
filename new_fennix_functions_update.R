@@ -1,0 +1,557 @@
+#--------------------------------------------------------------
+#--------------------------FENNIX FUNCTION---------------------
+
+completeSummary <-function(table)
+{
+  
+  ncTable <- ncol(table)
+  
+  factCol <- unlist(lapply(1:ncTable,function(x){is.factor(table[,x])}))
+  
+  if(sum(factCol)>0)
+  {
+    
+    factCol <- which(factCol)
+    
+    cuantVar <- table[,-factCol]
+    
+    cualVar  <- as.data.frame(table[,factCol])
+    
+    if(ncol(cualVar)==1){names(cualVar) <- names(table)[factCol];summCual <- list(table(cualVar));names(summCual) <- names(table)[factCol]}
+    else{summCual <- apply(cualVar,2,table)}
+    
+    
+  }else{cuantVar  <- table}  
+
+  min <- apply(cuantVar,2,min)
+  Q1  <- apply(cuantVar,2,function(x){quantile(x,0.25)})
+  mad <- apply(cuantVar,2,median)
+  med <- apply(cuantVar,2,mean)
+  Q3  <- apply(cuantVar,2,function(x){quantile(x,0.75)})
+  max <- apply(cuantVar,2,max)
+  sd  <- apply(cuantVar,2,sd)
+  cv <-  apply(cuantVar,2,function(x){if(mean(x)!=0){sd(x)/mean(x)*100}else{cv=NA}})
+  #if(mean(x!=0))
+  #{  
+   # cv  <- apply(table,2,function(x){sd(x)/mean(x)*100})
+  #}else{cv=NA}
+  
+  summCuant <- as.data.frame(round(as.matrix( data.frame(max,min,Q1,Q3,mad,med,sd,cv)),3) )
+  
+  var <- row.names(summCuant)
+  
+  summCuant <- data.frame(var,summCuant)
+  
+  if(sum(factCol)>0){summaryDataSet <- list(summCuant,summCual)}else{summaryDataSet <- summCuant}
+  
+ 
+  
+  return(summaryDataSet)
+}
+
+
+  
+  
+
+ajust.grap <- function(dir.fol,tov,set,pos1=0.5,pos2=0.6)
+{
+
+  val.fit   <- read.table(paste0(dir.fol,set),comment.char="/")
+  
+  tiff(paste0("predvsrealfit_",tov,".tiff"),width = 600, height = 400, pointsize = 20)
+  plot(val.fit[2:3],pch=21,bg="Red",ylab="Predicted Yield",xlab="Real Yield")
+  mod <- lm(V2~V3,data=val.fit)
+  mod.R<-summary(mod)$r.squared
+  abline(mod,lwd=1.5)
+  text(pos1,pos2,substitute(paste(R^2,"= ",nn), list(nn=round(mod.R,3))))
+  dev.off()
+  
+}
+
+
+corScheme <- function(compMatrix,unCorMatrix,dirSave)
+{
+  namUnMatrix <- names(unCorMatrix)
+  namMatrix   <- names(compMatrix)
+  
+  #sink(paste0(dirSave,"corScheme.txt"))
+  fileNam     <- paste0(dirSave,"corScheme2.txt")
+  fileCon  <- file(fileNam)
+  writeLines("correlation Matrix",fileCon)
+  close(fileCon)
+  
+  for(i in 1:(ncol(unCorMatrix)-1))
+  {  
+    target <- unCorMatrix[namUnMatrix[i]][,1]
+    inputs <- compMatrix[-which(namUnMatrix[i] == namMatrix)]
+    
+    
+    corOth <- cor(x=inputs,y=target)[,1]
+    namVar <- names(corOth)
+    
+    corColum <- factor("")
+    
+    if(sum(corOth >0.69)>0 & sum(corOth < -0.69)>0)
+    {
+      nvN <- namVar[corOth < -0.69]
+      nvP <- namVar[corOth >0.69]
+      
+      corColun <- c(nvN,paste0(namUnMatrix[i],"*"),nvP)
+      
+    }else if(sum(corOth < -0.69)>0)
+    {
+      nvN <- namVar[corOth < -0.69]
+      corColun <- c(nvN,paste0(namUnMatrix[i],"*"))
+    }else if(sum(corOth > 0.69)>0){   
+      nvP <- namVar[corOth >0.69]
+      corColun <- c(paste0(namUnMatrix[i],"*"),nvP)
+    }else{  corColun <- c(paste0(namUnMatrix[i],"*")) }
+    cat(paste(corColun,collapse='\t'), file=fileNam, append = T,   sep = "\n")
+  }
+  #sink()
+}
+
+
+unCorrMatrix <- function(data,dirSav,cor.reduce="caret")
+{ 
+  
+  if(sum(round(apply(data,2,sd),2)==0)>0)
+  {  
+    data <- data[,-which(round(apply(data,2,sd),2)==0)]
+  }else{data}
+  corMat <- abs(cor(data[,-ncol(data)]))
+  
+  
+  if(cor.reduce=="clasic")
+  { 
+    sink(paste0(dirSav,"saveTest.txt")) 
+    while(sum(corMat>=0.7 & corMat<1)!=0 )
+    {
+      i=1
+      while(ncol(data)>i)
+      { 
+      
+        print(paste("Step",i))
+        outPut    <- data[,ncol(data)]
+        colCor    <- corMat[,i]
+      
+        #ABRE
+        nam <- names(data)
+        #CIERRA      
+      
+        if(sum(colCor>=0.69 & colCor<1)==0)
+        {   
+          data <- data
+        }else{
+          corCol    <- c(i,which(colCor>=0.69 & colCor<1))
+          #ABRE
+          print("Correlated variables:")
+          print(data.frame(nam[corCol],colCor[corCol]))
+          #CIERRA
+          corOutput <- as.vector(abs(cor(data[,corCol],outPut)))
+          corMax    <- corCol[which(corOutput==max(corOutput))[1]]
+        
+          if(i == corMax)
+          {
+            quitCol <-  corCol[-1]
+          }else{
+            quitCol <-  corCol[1]
+          }
+          #quitCol   <- corCol[which(corOutput!=max(corOutput))] #HE QUITADO [1]
+        
+          data      <- data[,-quitCol]
+          #ABRE
+          print("variables Discarded:")
+        
+          print(nam[quitCol])
+          print("---------------*--------------")
+          #CIERRA      
+        }
+        corMat <- abs(cor(data))    
+        i=i+1
+        #print(c(i,ncol(data)))
+      }
+    }
+    sink()
+  }else if(cor.reduce=="caret"){
+    require(caret)
+    
+    highlyCorDescr <- findCorrelation(corMat, cutoff = 0.69)
+    if(length(highlyCorDescr)>0)
+    {
+      namHCD <- colnames(data)[highlyCorDescr]
+      data  <- data[, -highlyCorDescr]
+      cat("\n\nBY CORRELATION:\n\n",file=paste0(dirSav,"RemovedVariables.txt"),append=T)
+      cat(paste(namHCD,collapse="\n"),file=paste0(dirSav,"RemovedVariables.txt"),append=T)
+    }else{data  <- data}
+    
+  }else{}
+  return(data)
+}
+
+
+createFolders <- function(dirFol,variety)
+{
+  if(!file.exists(paste0(dirFol,"VARIETY_ANALYSIS"))){dir.create("VARIETY_ANALYSIS");setwd("VARIETY_ANALYSIS")}else if( substring(getwd(),nchar(getwd())-15,nchar(getwd()))=="VARIETY_ANALYSIS" ){}else{setwd("VARIETY_ANALYSIS")}
+  
+  
+  for(i in 1:length(variety))
+  {  
+    if(!file.exists(as.character(variety[i]))){dir.create(as.character(variety[i]))}else{}
+    if(!file.exists(paste0(variety[i],"/LINEAR_REGRESSION"))){dir.create(paste0(variety[i],"/LINEAR_REGRESSION"))}else{}
+    if(!file.exists(paste0(variety[i],"/VSURF"))){dir.create(paste0(variety[i],"/VSURF"))}else{}
+    if(!file.exists(paste0(variety[i],"/DESCRIPTIVE_ANALYSIS"))){dir.create(paste0(variety[i],"/DESCRIPTIVE_ANALYSIS"))}else{}
+    if(!file.exists(paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK"))){dir.create(paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK"))}else{}
+    if(!file.exists(paste0(variety[i],"/RANDOM_FOREST"))){dir.create(paste0(variety[i],"/RANDOM_FOREST"))}else{}
+    if(!file.exists(paste0(variety[i],"/C_FOREST"))){dir.create(paste0(variety[i],"/C_FOREST"))}else{}
+    if(!file.exists(paste0(variety[i],"/DATA_SETS"))){dir.create(paste0(variety[i],"/DATA_SETS"))}else{}
+    
+    dirFennixVar <- paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK/")
+    
+    #if(!file.exists(paste0(dirFennixVar,"/FENNIX_SCRIPTS"))){dir.create(paste0(dirFennixVar,"/FENNIX_SCRIPTS"))}else{}
+    if(!file.exists(paste0(dirFennixVar,"test_0_10"))){dir.create(paste0(dirFennixVar,"/test_0_10/"))}else{}
+    if(!file.exists(paste0(dirFennixVar,"test_0_10/TRAINING_DATASET"))){dir.create(paste0(dirFennixVar,"/test_0_10/TRAINING_DATASET"))}else{}
+    if(!file.exists(paste0(dirFennixVar,"test_0_10/TRAINING_DATASET/INPUTS_AND_ERRORS"))){dir.create(paste0(dirFennixVar,"/test_0_10/TRAINING_DATASET/INPUTS_AND_ERRORS"))}else{}     
+    if(!file.exists(paste0(dirFennixVar,"test_0_10/VALIDATION_DATASET"))){dir.create(paste0(dirFennixVar,"/test_0_10/VALIDATION_DATASET"))}else{}
+    if(!file.exists(paste0(dirFennixVar,"test_0_10/VALIDATION_DATASET/INPUTS_AND_ERRORS"))){dir.create(paste0(dirFennixVar,"/test_0_10/VALIDATION_DATASET/INPUTS_AND_ERRORS"))}else{}
+    #
+    if(!file.exists(paste0(dirFennixVar,"/PROFILES"))){dir.create(paste0(dirFennixVar,"/PROFILES"))}else{}
+    if(!file.exists(paste0(dirFennixVar,"/METRIC"))){dir.create(paste0(dirFennixVar,"/METRIC"))}else{}
+  }
+  
+}
+
+
+
+descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Rendimiento (kg/ha)",smooth=FALSE,smoothInd=NULL,ghrp="box")
+{
+  print("Don't be scare about errors and warnings messages, check that images have been created in DESCRIPTIVE_ANALYSIS folder")
+  namsDataSet <- names(dataSet)  
+  
+  if(variety!="All")
+  {  
+    dataSetV    <- subset(dataSet,dataSet[,segme]==variety)[,-segme]
+  }else{dataSetV <- dataSet[,-segme]}
+  
+  ncTable <- ncol(dataSetV)
+  
+  outputVar <- dataSetV[,(output-1)]
+
+  
+  factCol0 <- unlist(lapply(1:ncTable,function(x){is.factor(dataSetV[,x])}))
+  
+  if(sum(factCol0)>0)
+  {
+    
+    factCol <- which(factCol0)
+    
+    cuantVar <- as.data.frame(dataSetV[,-factCol])
+    
+    
+    cualVar  <- as.data.frame(dataSetV[,factCol])
+    
+    if(ncol(cualVar)==1){names(cualVar) <- names(dataSetV)[factCol]}
+
+    
+  }else{cuantVar  <- dataSetV} 
+  
+  nInputs <- ncol(cuantVar)
+  namCuanInputs <- names(cuantVar)[-nInputs]
+  
+  
+    for(namC in namCuanInputs)
+    {  
+      if(!isTRUE(smooth))
+      {
+        png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340)
+        layout(matrix(c(1,2),ncol=2,nrow=1))
+        par(oma = c(0, 0, 3, 0))
+        plot(cuantVar[,namC],outputVar,ylab = ylabel,xlab=namC,pch=21,bg="blue",cex=1.2)    
+        boxplot(cuantVar[,namC],col="skyblue",ylab = namC )
+        mtext(paste0(variety," - ",namC),outer=T,font=2)
+        dev.off()
+      }else{
+
+  
+
+      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340)
+      layout(matrix(c(1,2),ncol=2,nrow=1))
+      par(oma = c(0, 0, 3, 0))
+      plot(cuantVar[,namC],outputVar,ylab=ylabel,xlab=namC,pch=21,bg="blue",cex=1.2)    
+      
+     
+        
+        lo <- loess(outputVar~cuantVar[,namC])
+        xl <- seq(min(cuantVar[,namC]),max(cuantVar[,namC]), (max(cuantVar[,namC]) - min(cuantVar[,namC]))/1000)
+        predicLoess <- try(predict(lo,xl))
+        
+        if(is(predicLoess)[1]!="try-error"){lines(xl,predicLoess , col='red', lwd=2) }else{
+        
+          lo <- lowess(outputVar~cuantVar[,namC])
+          lines(lo,lwd=2,col="red")
+      
+        }
+      if(ghrp=="box")
+      {  
+        boxplot(cuantVar[,namC],col="skyblue",ylab=namC)
+    
+        }else if(ghrp=="varPoints"){
+          plot(dataSet[,namC],dataSet[,output],ylab=ylabel,xlab=namC,col="gray",cex=1,pch=16)
+        points(cuantVar[,namC],outputVar,pch=16,col="red")
+      }else{stop("ghrp Invlid")}
+      mtext(paste(variety,"_",namC),outer=T,font=2)
+      dev.off()
+    }
+  }
+ 
+ 
+  png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_Yield.png"),width=730,height=340)
+  layout(matrix(c(1,2),ncol=2,nrow=1))
+  par(oma = c(0, 0, 3, 0)) 
+  hist(outputVar,col="skyblue",main="",xlab=ylabel)
+  boxplot(outputVar,col="skyblue",ylab=ylabel)
+  mtext(paste(variety,"_Yield"),outer=T,font=2)
+  dev.off()
+ 
+
+  summ <- completeSummary(dataSetV)
+ 
+  
+  if(sum(factCol0)>0)
+  { 
+    namCualVar <- names(cualVar)
+    
+    write.table(summ[[1]],paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"summaryVariables.csv"),append=F,sep=",",row.names=F)
+    
+    for(namC in namCualVar)
+    {
+      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340)
+      layout(matrix(c(1,2),ncol=2,nrow=1))
+      par(oma = c(0, 0, 3, 0))
+    
+      stripchart(outputVar~cualVar[,namC],                
+                 vertical = TRUE, col="blue" ,pch=16,las=3,ylab=ylabel)
+      
+      boxplot(outputVar~cualVar[,namC],
+              vertical = TRUE, col="deepskyblue" ,las=3,ylab=ylabel)
+      
+      mtext(paste(variety,"_",namC),outer=T,font=2)
+      dev.off()
+      
+      cat("\n", namC, "\n",file=paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"summaryVariables.csv"),append=T )
+      
+      write.table(summ[[2]][[namC]],paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"summaryVariables.csv"),append=T,row.names=F,col.names =F,sep=",")
+      
+    }
+     
+      
+  }else{ write.table(summ,paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"summaryVariables.csv"),append=F,sep=",",row.names=F)}
+
+
+}
+
+
+
+dataSetProces <- function(variety,dataSet,segme,corRed)
+{
+ 
+   nInputList <- 0
+
+  for(i in 1:length(variety))
+  { 
+    dirSav <- paste0(variety[i],"/DATA_SETS/")
+    cat(paste("List of variables removed:\n"),file=paste0(dirSav,"RemovedVariables.txt"),append=F)
+    if(variety[i]=="All")
+    {
+      listVari <- dataSet[,-segme]
+    }else{listVari   <- subset(dataSet[,-segme],as.character(dataSet[,segme])==variety[i])}
+    
+    nvz <- nearZeroVar(listVari)
+    
+    if(length(nvz)>0){
+      
+      allData <- listVari[,-nvz]
+      
+      
+      
+      cat(paste("\nVARIABLES WITH VARIANCE NEAR TO ZERO:\n\n"),file=paste0(dirSav,"RemovedVariables.txt"),append=T)
+      cat(paste(names(allData)[nvz],collapse = "\n"),file=paste0(dirSav,"RemovedVariables.txt"),append=T)
+    }else{allData <- listVari}
+    
+#     if(sum(round(apply(listVari,2,sd),2)==0)>0)
+#     {  
+#       allData <- listVari[,-which(round(apply(listVari,2,sd),2)==0)]
+#     }else{allData <- listVari }
+    
+    listVari2 <- listVari
+    
+    listVari2$ID <- row.names(listVari)
+
+    listVari2 <- listVari2[,c(length(listVari2),1:(length(listVari2)-1))]
+    
+    write.csv(listVari2,paste0(dirSav,variety[i],"_complet.csv"), row.names = F)
+    
+
+    cualVar <- unlist(lapply(1:ncol(allData),function(x){!is.factor(allData[,x])}))
+    
+    if(sum(cualVar)!=length(cualVar))
+    { 
+      library(earth)
+      
+      cuantAllData <- allData[,cualVar]
+      
+      form <- formula(paste(names(allData)[ncol(allData)],"~ ."))
+      
+      namImp  <- names(listVari)
+      
+      listVari1 <- do.call(data.frame,lapply(1:(length(listVari)-1),function(x){z<-listVari[,x];if(!is.factor(z)){z}else{droplevels(z)} }))
+      
+      listVari[,1:(length(listVari)-1)] <- listVari1
+      
+      names(listVari)  <- namImp
+      
+      dummies <- dummyVars(form, data = listVari)
+      
+      tranfVars <- predict(dummies, newdata = listVari)
+        
+      unlistvari <- as.data.frame(unCorrMatrix(tranfVars,dirSav,cor.reduce = corRed))
+      
+      unlistvari$output <-  allData[,ncol(allData)]
+      
+      corScheme(as.data.frame(tranfVars),unlistvari,dirSav)
+      
+    }else{cuantAllData <- allData ; unlistvari <- as.data.frame(unCorrMatrix(listVari,dirSav,cor.reduce = corRed)) ; corScheme(as.data.frame(cuantAllData ),unlistvari,dirSav)}
+
+    
+    
+
+    corMatrix <- cor(cuantAllData)
+    
+    write.csv(corMatrix,paste0(dirSav,variety[i],"_corMatrix.csv"))
+
+    
+    
+    #saveFennixFormat(unlistvari,variety[i],paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK/"))
+    #nInputList[i] <- ncol(unlistvari)-1 
+    #summVar <- completeSummary(unlistvari)
+    
+    write.csv(unlistvari,paste0(dirSav,variety[i],"_reduced.csv"))
+    
+  }
+  #return(nInputList)
+}
+
+
+
+
+#VSURF ALTERNATIVE
+
+vSurFun <- function(variety,dirLocation=paste0(getwd(),"/"),nCor=1)
+{
+  require(VSURF)  
+  
+  dirDataSet <- paste0(dirLocation,variety,"/DATA_SETS/",variety,"_complet.csv")
+  dirSave    <- paste0(dirLocation,variety,"/VSURF/")
+  
+  dataSets   <- lapply(dirDataSet,function(x){read.csv(x,row.names=1)})
+  
+  for(i in 1:length(variety))
+  {
+    listVari  <- dataSets[[i]]
+    inpVarMat <- listVari[,1:(ncol(listVari)-1)]
+    outVarMat <- listVari[,ncol(listVari)]    
+  
+    vSurfResoults <- VSURF.parallel(x=inpVarMat,y=outVarMat,ncores = nCor,ntree = 2000,mtry=dim(inpVarMat)/3)
+  
+    relvar <- round( vSurfResoults$ord.imp$x/sum(vSurfResoults$ord.imp$x),3)*100  
+    namVar <- names(inpVarMat)[vSurfResoults$ord.imp$ix]  
+  
+    namVar <- factor(namVar,levels=namVar)
+    threes <-  length(vSurfResoults$varselect.thres)+0.5
+  
+    metriData  <- data.frame(namVar,relvar,threes)     
+  
+  
+    cols <- array("royalblue1",ncol(inpVarMat))
+    cols[namVar %in% names(inpVarMat)[vSurfResoults$varselect.interp ]] <- "red"
+  
+    tiff(paste0(dirSave[i],variety[i],"_relevance_vsurf.tiff"), width = 800, height = 600)
+    k <-  ggplot(metriData,aes(namVar, relvar))+geom_bar( stat="identity",fill=cols,width=0.6,
+                                                          color="black")+theme(axis.text.x = element_text(angle = 45, hjust = 1))+theme(axis.title.y=element_text(
+                                                            size=15),axis.text= element_text(colour = "gray26",size = 13))+xlab("")+ylab("% Sensitivity (Relevance)")+theme(panel.background =
+                                                                                                                                                                            element_rect(colour = "gray38")) +theme(panel.background = element_rect(colour = "gray32"))
+    kf <- k + theme(panel.background = element_rect(fill = 0,colour = "gray"))+geom_line(aes(x = threes, y = relvar),linetype=2) + geom_hline(h=0)
+  
+    kf <- kf + ggtitle(paste("Vsurf - Variety ", variety[i]))
+  
+    print(kf)
+  
+    dev.off()
+    print(variety[i])
+  }  
+    
+}
+
+varImportance <- function(model, pred.data=model$trainingData, ..., scale=T) 
+{
+  library(caret)
+  inputs <- pred.data[,-ncol(pred.data)]
+  response <- pred.data[,ncol(pred.data)]
+  n <- nrow(pred.data)
+  
+  errors <- rep(0, ncol(inputs))
+  errors <- as.data.frame(errors)
+  row.names(errors) <- names(inputs)
+  
+  for(input in names(inputs)) {
+    
+    xname <- ifelse(is.character(input),
+                    input,
+                    ifelse(is.name(input),
+                           deparse(input),
+                           eval(input)))
+    
+    n.pt = min(length(unique(pred.data[, xname])), 50)
+    
+    err <- 0
+    
+    xv <- pred.data[, xname]
+    if (is.factor(xv) && !is.ordered(xv)) {
+      x.pt <- levels(xv)
+      mode <- xv[which.max(tabulate(match(xv, x.pt)))]
+      x.data <- pred.data
+      x.data[, xname] <- rep(mode, n)
+      mode.err <- RMSE(predict(model, x.data), response)
+      for (i in seq(along = x.pt)) {
+        x.data <- pred.data
+        x.data[, xname] <- factor(rep(x.pt[i], n), levels = x.pt)
+        input.cancellation <- (RMSE(predict(model, x.data), response) - mode.err)^2
+        if(!is.na(input.cancellation)) err <- err + input.cancellation
+      }
+    } else {
+      if (is.ordered(xv)) 
+        xv <- as.numeric(xv)
+      x.pt <- seq(min(xv), max(xv), length = n.pt)
+      mean <- mean(xv)
+      x.data <- pred.data
+      x.data[, xname] <- rep(mean, n)
+      mean.err <- RMSE(predict(model, x.data), response)
+      for (i in seq(along = x.pt)) {
+        x.data <- pred.data
+        x.data[, xname] <- rep(x.pt[i], n)
+        input.cancellation <- (RMSE(predict(model, x.data), response) - mean.err)^2
+        if(!is.na(input.cancellation)) err <- err + input.cancellation
+      }
+    }
+    errors[input,] <- err
+  }
+  
+  if(scale) {
+    errors <- errors - min(errors, na.rm = TRUE)
+    errors <- errors/max(errors, na.rm = TRUE) * 100
+  }
+  
+  invisible(errors)
+  return(errors)
+}
+
