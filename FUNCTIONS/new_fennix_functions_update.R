@@ -48,26 +48,7 @@ completeSummary <-function(table)
   
   return(summaryDataSet)
 }
-
-
-  
-  
-
-ajust.grap <- function(dir.fol,tov,set,pos1=0.5,pos2=0.6)
-{
-
-  val.fit   <- read.table(paste0(dir.fol,set),comment.char="/")
-  
-  tiff(paste0("predvsrealfit_",tov,".tiff"),width = 600, height = 400, pointsize = 20)
-  plot(val.fit[2:3],pch=21,bg="Red",ylab="Predicted Yield",xlab="Real Yield")
-  mod <- lm(V2~V3,data=val.fit)
-  mod.R<-summary(mod)$r.squared
-  abline(mod,lwd=1.5)
-  text(pos1,pos2,substitute(paste(R^2,"= ",nn), list(nn=round(mod.R,3))))
-  dev.off()
-  
-}
-
+ 
 
 corScheme <- function(compMatrix,unCorMatrix,dirSave)
 {
@@ -161,7 +142,7 @@ unCorrMatrix <- function(data,dirSav,cor.reduce="caret")
         
           data      <- data[,-quitCol]
           #ABRE
-          print("variables Discarded:")
+          print("variables removed:")
         
           print(nam[quitCol])
           print("---------------*--------------")
@@ -199,7 +180,6 @@ createFolders <- function(dirFol,variety)
   {  
     if(!file.exists(as.character(variety[i]))){dir.create(as.character(variety[i]))}else{}
     if(!file.exists(paste0(variety[i],"/LINEAR_REGRESSION"))){dir.create(paste0(variety[i],"/LINEAR_REGRESSION"))}else{}
-    if(!file.exists(paste0(variety[i],"/VSURF"))){dir.create(paste0(variety[i],"/VSURF"))}else{}
     if(!file.exists(paste0(variety[i],"/DESCRIPTIVE_ANALYSIS"))){dir.create(paste0(variety[i],"/DESCRIPTIVE_ANALYSIS"))}else{}
     if(!file.exists(paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK"))){dir.create(paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK"))}else{}
     if(!file.exists(paste0(variety[i],"/RANDOM_FOREST"))){dir.create(paste0(variety[i],"/RANDOM_FOREST"))}else{}
@@ -208,15 +188,7 @@ createFolders <- function(dirFol,variety)
     
     dirFennixVar <- paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK/")
     
-    #if(!file.exists(paste0(dirFennixVar,"/FENNIX_SCRIPTS"))){dir.create(paste0(dirFennixVar,"/FENNIX_SCRIPTS"))}else{}
-    if(!file.exists(paste0(dirFennixVar,"test_0_10"))){dir.create(paste0(dirFennixVar,"/test_0_10/"))}else{}
-    if(!file.exists(paste0(dirFennixVar,"test_0_10/TRAINING_DATASET"))){dir.create(paste0(dirFennixVar,"/test_0_10/TRAINING_DATASET"))}else{}
-    if(!file.exists(paste0(dirFennixVar,"test_0_10/TRAINING_DATASET/INPUTS_AND_ERRORS"))){dir.create(paste0(dirFennixVar,"/test_0_10/TRAINING_DATASET/INPUTS_AND_ERRORS"))}else{}     
-    if(!file.exists(paste0(dirFennixVar,"test_0_10/VALIDATION_DATASET"))){dir.create(paste0(dirFennixVar,"/test_0_10/VALIDATION_DATASET"))}else{}
-    if(!file.exists(paste0(dirFennixVar,"test_0_10/VALIDATION_DATASET/INPUTS_AND_ERRORS"))){dir.create(paste0(dirFennixVar,"/test_0_10/VALIDATION_DATASET/INPUTS_AND_ERRORS"))}else{}
-    #
     if(!file.exists(paste0(dirFennixVar,"/PROFILES"))){dir.create(paste0(dirFennixVar,"/PROFILES"))}else{}
-    if(!file.exists(paste0(dirFennixVar,"/METRIC"))){dir.create(paste0(dirFennixVar,"/METRIC"))}else{}
   }
   
 }
