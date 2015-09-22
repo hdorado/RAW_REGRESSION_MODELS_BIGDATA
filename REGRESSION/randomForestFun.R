@@ -172,6 +172,7 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,bar
         suppressWarnings(print(m))
         dev.off()
     }else{
+        require(cowplot)
         #Comienzo boxplot
         
         newV <-  melt(t(v))[,-1]

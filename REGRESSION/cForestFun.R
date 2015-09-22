@@ -10,7 +10,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
   require(snowfall)
   require(reshape)
   require(stringr)
-  library(cowplot)
+  
   
   sfInit(parallel=T,cpus=ncores)
   sfLibrary(caret)
@@ -176,7 +176,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
         dev.off()
     }else{
         #Comienzo boxplot
-    
+        require(cowplot)
         newV <-  melt(t(v))[,-1]
     
         names(newV) <-  c("variable","value")
