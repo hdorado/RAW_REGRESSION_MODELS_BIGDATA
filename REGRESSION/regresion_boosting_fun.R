@@ -1,8 +1,6 @@
 ## All subsequent models are then run in parallel
 
-
-
-conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot=FALSE,col.grap="lightskyblue",nb.it = 100,saveWS=F,wid=500,hei=800,ab=7,iz=4.1,ar=4.1,de=2.1,ncores=21)
+boostingFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot=FALSE,col.grap="lightskyblue",nb.it = 100,saveWS=F,wid=500,hei=800,ab=7,iz=4.1,ar=4.1,de=2.1,ncores=21)
 {
   Sys.time()->start
   require(party)
@@ -11,19 +9,22 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
   require(reshape)
   require(stringr)
   require(agricolae)
+  require(gbm)
+  require(plyr)
   
   sfInit(parallel=T,cpus=ncores)
   sfLibrary(caret)
-  sfLibrary(party)
+  sfLibrary(gbm)
+  sfLibrary(plyr)
   
   dirDataSet <- paste0(dirLocation,variety,"/DATA_SETS/",variety,"_complet.csv")
-  dirSave    <- paste0(dirLocation,variety,"/C_FOREST/")  
+  dirSave    <- paste0(dirLocation,variety,"/STOC_GRAD_BOOS/")  
   
   dataSets   <- lapply(dirDataSet,function(x){read.csv(x,row.names=1)})
   
-  cat(paste("C forest with Conditional Importance:\n"))
+  cat(paste("gbm with Conditional Importance:\n"))
   
-  cForestCaret <- function(x)
+  boostingCaret <- function(x)
   {  
     setseed <- .Random.seed[1:nb.it]
     nOutPut <- ncol(data)
@@ -34,19 +35,30 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
     #  info <- sprintf("%d%% done", round((i/(nb.it)*100)))
     # setWinProgressBar(pb, paste(i/(nb.it)*100), label=info)
     
-    inTrain <- createDataPartition(y=data[,nOutPut], p=0.7, list=F)
+    inTrain  <- createDataPartition(y=data[,nOutPut], p=0.7, list=F)
     training <- data[inTrain,]
-    testing <- data[-inTrain,]
+    testing  <- data[-inTrain,]
     
-    
-    
-    grid <- expand.grid(mtry=round((ncol(training)-1)/3))
-    
- 
-    model <- train(training[,-ncol(training)], training[,ncol(training)],
-                   method="cforest", tuneGrid=grid)
     
 
+    grid <- expand.grid(interaction.depth = c(1, 5, 9),
+                        n.trees = (14:30)*50,
+                        shrinkage = c(0.001,0.01,0.1),
+                        n.minobsinnode = c(5,10,20))
+  
+    
+    fitControl <- trainControl(## 10-fold CV
+                    method = "repeatedcv",
+                    number = 10,
+                        ## repeated ten times
+                    repeats = 10)
+    
+    Sys.time()->start
+  
+    model <- train(training[,-ncol(training)], training[,ncol(training)],
+                   method="gbm", tuneGrid=grid,bag.fraction = 0.8)
+    print(Sys.time()-start)    
+    
     
     performance <- R2(predict(model, testing), testing[,nOutPut]) * 100
     
@@ -56,8 +68,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
     
   }
   # close(pb) 
-  sfExport("cForestCaret")
-  
+  sfExport("boostingCaret")
   sfExport("nb.it")
   
   
@@ -71,25 +82,22 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
     if(length(nvz)==0){data <- data0}else{data <- data0[,-nvz] }
     v <- integer()
     
-    profiles <- list()
-    length(profiles) <- length(names(data)[-ncol(data)])
-    names(profiles) <- names(data)[-ncol(data)]
-
-   
     sfExport("data")
-  
+ 
 
-    
     cat(paste("Running ",nb.it,"models in cross validation\n"))
     
     
-    cForestModels <- sfLapply(1:nb.it,cForestCaret)
+    boostingModels <- sfLapply(1:nb.it,boostingCaret)
 
-    allModels <- lapply(cForestModels,function(x){x[[1]]})
+    allModels <- lapply(boostingModels,function(x){x[[1]]})
     #allRMSE   <- unlist(lapply(allModelsAndRMSE,function(x){x[[2]]}))
-    performance     <- unlist(lapply(cForestModels,function(x){x[[2]]}))
-    relevances    <- lapply(cForestModels,function(x){x[[3]]})
+    performance     <- unlist(lapply(boostingModels,function(x){x[[2]]}))
+    relevances    <- lapply(boostingModels,function(x){x[[3]]})
     
+    bestMod <- allModels[which(performance==max(performance))][[1]]
+    
+    write.table(bestMod$bestTune,paste(dirSave[j],"best_model.txt"),sep="\t")
     
     currentVarImp <- do.call(cbind,relevances)
     
@@ -113,6 +121,9 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),barplot
     profilesList <- lapply(1:nb.it,function(x){ profLis <- list(0,0,0);names(profLis) <- princVar[[x]] ;for(n in princVar[[x]]){ profil <- profilePlot(allModels[[x]], n, data, F) ; profLis[[n]] <- data.frame(profil$y) ; row.names(profLis[[n]]) <- profil$x };return(profLis)})    
  
 
+    profiles <- list()
+    length(profiles) <- length(names(data)[-ncol(data)])
+    names(profiles) <- names(data)[-ncol(data)]
     
     
     for(z in  1:length(ordered))

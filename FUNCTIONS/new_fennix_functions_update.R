@@ -183,6 +183,7 @@ createFolders <- function(dirFol,variety)
     if(!file.exists(paste0(variety[i],"/DESCRIPTIVE_ANALYSIS"))){dir.create(paste0(variety[i],"/DESCRIPTIVE_ANALYSIS"))}else{}
     if(!file.exists(paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK"))){dir.create(paste0(variety[i],"/ARTIFICIAL_NEURAL_NETWORK"))}else{}
     if(!file.exists(paste0(variety[i],"/RANDOM_FOREST"))){dir.create(paste0(variety[i],"/RANDOM_FOREST"))}else{}
+    if(!file.exists(paste0(variety[i],"/STOC_GRAD_BOOS"))){dir.create(paste0(variety[i],"/STOC_GRAD_BOOS"))}else{}
     if(!file.exists(paste0(variety[i],"/C_FOREST"))){dir.create(paste0(variety[i],"/C_FOREST"))}else{}
     if(!file.exists(paste0(variety[i],"/DATA_SETS"))){dir.create(paste0(variety[i],"/DATA_SETS"))}else{}
     
