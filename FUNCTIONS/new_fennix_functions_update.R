@@ -196,7 +196,7 @@ createFolders <- function(dirFol,variety)
 
 
 
-descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Rendimiento (kg/ha)",smooth=FALSE,smoothInd=NULL,ghrp="box")
+descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Rendimiento (kg/ha)",smooth=FALSE,smoothInd=NULL,ghrp="box",res=NA)
 {
   print("Don't be scare about errors and warnings messages, check that images have been created in DESCRIPTIVE_ANALYSIS folder")
   namsDataSet <- names(dataSet)  
@@ -236,7 +236,7 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Re
     {  
       if(!isTRUE(smooth))
       {
-        png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340)
+        png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340,res=res)
         layout(matrix(c(1,2),ncol=2,nrow=1))
         par(oma = c(0, 0, 3, 0))
         plot(cuantVar[,namC],outputVar,ylab = ylabel,xlab=namC,pch=21,bg="blue",cex=1.2)    
@@ -247,7 +247,7 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Re
 
   
 
-      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340)
+      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340,res=res)
       layout(matrix(c(1,2),ncol=2,nrow=1))
       par(oma = c(0, 0, 3, 0))
       plot(cuantVar[,namC],outputVar,ylab=ylabel,xlab=namC,pch=21,bg="blue",cex=1.2)    
@@ -278,7 +278,9 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Re
   }
  
  
-  png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_Yield.png"),width=730,height=340)
+  png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_Yield.png"),width=730,height=340,res=res)
+  
+  
   layout(matrix(c(1,2),ncol=2,nrow=1))
   par(oma = c(0, 0, 3, 0)) 
   hist(outputVar,col="skyblue",main="",xlab=ylabel)
@@ -298,7 +300,7 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,ylabel = "Re
     
     for(namC in namCualVar)
     {
-      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340)
+      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=730,height=340,res=res)
       layout(matrix(c(1,2),ncol=2,nrow=1))
       par(oma = c(0, 0, 3, 0))
     
