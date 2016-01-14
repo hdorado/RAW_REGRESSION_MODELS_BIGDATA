@@ -8,3 +8,5 @@ lisFil <- lisFil[-grep("multiProfileFix",lisFil)]
 lapply(lisFil,source)
 
 save(list = ls(all.names = TRUE), file = "//dapadfs/workspace_cluster_6/TRANSVERSAL_PROJECTS/MADR/COMPONENTE_2/OPEN_BIGDATA_AEPS/REGRESSION_MODELS/All-Functions-AEPS_BD.RData")
+save(list = ls(all.names = TRUE), file = "D:/GIT_HUB_REPOSITORIOS/REGRESSION_MODELS/All-Functions-AEPS_BD.RData")
+
