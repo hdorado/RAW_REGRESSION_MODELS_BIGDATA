@@ -1,4 +1,6 @@
 
+rm(list=ls())
+
 dirServ <- "D:/GIT_HUB_REPOSITORIOS/RAW_REGRESSION_MODELS_BIGDATA/"
 
 lisFil <- list.files(dirServ,full.names = T,pattern = ".R",recursive = T)
