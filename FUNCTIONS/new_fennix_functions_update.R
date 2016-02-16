@@ -345,10 +345,10 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
     for(namC in namCualVar)
     {
       dp <- data.frame(x=cualVar[,namC],y=outputVar)
-      dotplot <- ggplot() + geom_dotplot(aes(x=x,y=y),data=dp,
-                  binaxis = "y",stackdir = "center",colour="grey4",
-                  fill=colpts,dotsize = szdts,na.rm=T,binwidth=diff(range(dp$y)/30))+ylab(ylabel)+xlab(namC)+tme+
-                  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      dotplot <- ggplot() + geom_point(aes(x=x,y=y),data=dp,
+                  colour="grey4", fill=colpts,size=szpts,shape = 21,
+                  alpha =0.6)+ylab(ylabel)+xlab(namC)+tme+
+                  theme(axis.text.x = element_text(angle = 35, hjust = 1))
       
       
       boxplot <- ggplot()+ geom_boxplot(width =0.3 ,aes(y=y,
