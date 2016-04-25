@@ -1,4 +1,3 @@
-#--------------------------------------------------------------
 #--------------------------FENNIX FUNCTION---------------------
 
 completeSummary <-function(table)
@@ -425,23 +424,25 @@ dataSetProces <- function(variety,dataSet,segme,corRed)
       
       form <- formula(paste(names(allData)[ncol(allData)],"~ ."))
       
-      namImp  <- names(listVari)
+      namImp  <- names(allData)
       
-      listVari1 <- do.call(data.frame,lapply(1:(length(listVari)-1),function(x){z<-listVari[,x];if(!is.factor(z)){z}else{droplevels(z)} }))
+      listVari1 <- do.call(data.frame,lapply(1:(length(allData)-1),function(x){z<-allData[,x];if(!is.factor(z)){z}else{droplevels(z)} }))
       
-      listVari[,1:(length(listVari)-1)] <- listVari1
+      allData[,1:(length(allData)-1)] <- listVari1
       
-      names(listVari)  <- namImp
+      names(allData)  <- namImp
       
-      dummies <- dummyVars(form, data = listVari)
+      dummies <- dummyVars(form, data = allData)
       
-      tranfVars <- predict(dummies, newdata = listVari)
+      tranfVars <- predict(dummies, newdata = allData)
         
       unlistvari <- as.data.frame(unCorrMatrix(tranfVars,dirSav,cor.reduce = corRed))
       
       unlistvari$output <-  allData[,ncol(allData)]
       
       corScheme(as.data.frame(tranfVars),unlistvari,dirSav)
+      
+      
       
     }else{cuantAllData <- allData ; unlistvari <- as.data.frame(unCorrMatrix(listVari,dirSav,cor.reduce = corRed)) ; corScheme(as.data.frame(cuantAllData ),unlistvari,dirSav)}
 
