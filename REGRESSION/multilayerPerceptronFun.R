@@ -47,9 +47,11 @@ if(uncorrset){
     model <- train( training[,-ncol(training)] ,training[,output], method="nnet"
                     ,tuneGrid=ctrl, trControl=
                       trainControl(method="repeatedcv", number=5),maxit = 1000,linOut=T)    
-    rmseVals <- RMSE(predict(model, testing[,-ncol(training)]), testing[,output])      
+    rmseVals <- as.numeric(postResample(predict(model, testing), testing[,output])[1])*100
+   
     
-    rsquare <- R2(predict(model, testing[,-ncol(training)]), testing[,output]) * 100
+    rsquare <- as.numeric(postResample(predict(model, testing), testing[,output])[2])*100
+
     
     
     

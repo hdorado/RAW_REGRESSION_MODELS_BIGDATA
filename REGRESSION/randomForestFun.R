@@ -45,7 +45,7 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
     model <- train(training[,-ncol(training)], training[,nOutPut],
                    method="rf", tuneGrid=grid,importance = TRUE,ntree = 2000)
     
-    performance <- R2(predict(model, testing), testing[,nOutPut]) * 100
+    performance <- as.numeric(postResample(predict(model, testing), testing[,nOutPut])[2])*100
     
     vaRelevance <- varImp(model, scale=T)$importance
     
@@ -212,8 +212,9 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
         
         png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei, pointsize = 20)
         m <- ggplot(newV1, aes(x=variable, y=value))
-        m <- m + geom_boxplot(fill=col.grap) + ylab("Importance")+
-            xlab("Input variable")+theme_bw() + 
+        
+        m <- m + geom_boxplot(fill=col.grap) + ylab("Importance")+ 
+              xlab("Input variable")+theme_bw() + scale_y_continuous(position = "top")+
             ggtitle(paste("Importance of variables\n(with a mean R2 of", perf1,
             "%)")) + theme(axis.text.x = element_text(angle=0, hjust=0.5, 
             vjust=0,size=sztxtx),plot.title = element_text(vjust=3,size=szmain),
@@ -222,7 +223,7 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
             axis.title.y = element_text(size = szlbtx))+ coord_flip()+
             geom_text(aes(y = max,label = noParameOut.groups.M))
         
-        print(ggdraw(switch_axis_position(m, 'x')))
+        print(m)
         dev.off()
     }
     #Fin del grafico boxplot
@@ -241,7 +242,7 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
     {
         if(!is.null(unlist(profiles[namSort[i]])))
         { 
-            png(paste0(dirSave[j],"MultiProfile_",namSort[i],".png"),width =,650, hei =410 , pointsize = 40)
+            png(paste0(dirSave[j],"MultiProfile_",namSort[i],".png"),width =,650, hei =410 )
             multiProfile(data,profiles,namSort[i],pp.szmain=pp.szmain,
                          pp.sztxtx=pp.sztxtx,pp.sztxty=pp.sztxty,
                          pp.szlbty=pp.szlbty,pp.szlbtx=pp.szlbtx,

@@ -58,7 +58,8 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
     
 
     
-    performance <- R2(predict(model, testing), testing[,nOutPut]) * 100
+    performance <- as.numeric(postResample(predict(model, testing), testing[,nOutPut])[2])*100
+
     
     vaRelevance <- varImp(model, scale=F, conditional=T)$importance
     
@@ -182,7 +183,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
         m <- m + geom_bar(stat="identity", width=0.5, fill="slategray1") + 
             ylab("Mean importance")+geom_errorbar(aes(ymax = lower, ymin=upper),
             width=0.25,data=errBars) + coord_flip() +theme_bw() +
-            ggtitle(paste("Importance of variables \n (with a mean R2 of",perf1,
+            ggtitle(paste("Importance of variables \n(with a mean R2 of",perf1,
              "%)")) +theme(plot.title = element_text(size = szmain, 
                                                        face = "bold", colour = "black", vjust = 1.5),
                              axis.text.y =element_text(size = sztxty),
@@ -222,7 +223,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
         m <- ggplot(newV1, aes(x=variable, y=value))
     
         m <- m + geom_boxplot(fill=col.grap) + ylab("Importance")+ xlab("Input variable")+
-            theme_bw() +
+            theme_bw() +scale_y_continuous(position = "top")+
             ggtitle(paste("Importance of variables (with a mean R2 of", perf1, "%)")) +
             theme(axis.text.x = element_text(angle=0, hjust=0.5, 
             vjust=0,size=sztxtx),plot.title = element_text(vjust=3,size=szmain),
@@ -231,7 +232,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
                   axis.title.y = element_text(size = szlbtx))+ coord_flip()+
             geom_text(aes(y = max,label = noParameOut.groups.M))
     
-        print(ggdraw(switch_axis_position(m, 'x')))
+        print(m)
         dev.off()
     }
     #Fin del grafico boxplot
@@ -249,7 +250,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
     {
       if(!is.null(unlist(profiles[namSort[i]])))
       { 
-      png(paste0(dirSave[j],"MultiProfile_",namSort[i],".png"),width =,650, hei =410 , pointsize = 40)
+      png(paste0(dirSave[j],"MultiProfile_",namSort[i],".png"),width =,650, hei =410 )
       multiProfile(data,profiles,namSort[i],pp.szmain=pp.szmain,
                    pp.sztxtx=pp.sztxtx,pp.sztxty=pp.sztxty,
                    pp.szlbty=pp.szlbty,pp.szlbtx=pp.szlbtx,
