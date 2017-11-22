@@ -12,8 +12,17 @@ multiProfile <- function(data, profiles, variable,xlim0=NULL,pp.szmain=15,pp.szt
     names(mean) <- c("Mean", "Class", "Freq", "SE")
     
     limits <- transform(mean,lower = Mean - SE, upper=Mean + SE)
+
+    mean <- mean[order(mean$Mean,decreasing = F),]
+    
+    mean$Class <- as.character(mean$Class)
+    
+    mean$Class <- factor(mean$Class,levels = mean$Class )
+    
+    #levels(mean$Class) <- mean$Class
     
     m <- ggplot(mean, aes(x=Class, y=Mean, fill=Freq))
+    
     m <- m + geom_bar(stat="identity") + ylab("Mean effect on output")+
       coord_flip() + geom_errorbar(aes(ymax = lower, ymin=upper), width=0.25,data=limits) +
       theme_bw() + ggtitle(paste("Individual influence of", variable, "(with", ncol(p), "profiles)")) +
@@ -49,3 +58,4 @@ multiProfile <- function(data, profiles, variable,xlim0=NULL,pp.szmain=15,pp.szt
   print(partialDep)
   }
 }
+
