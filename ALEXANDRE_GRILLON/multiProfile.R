@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-
 multiProfile <- function(data, profiles, variable,xlim0=NULL,pp.szmain=15,pp.sztxtx=15,
                 pp.sztxty=15,pp.szlbty=20,pp.szlbtx=20,pp.lgndtx=15) {
   var <- data[,variable]
