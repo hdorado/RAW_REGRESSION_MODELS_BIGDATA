@@ -208,7 +208,7 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
   
   if(variety!="All")
   {  
-    dataSetV    <- subset(dataSet,dataSet[,segme]==variety)[,-segme]
+    dataSetV    <- dataSet[dataSet[,segme]==variety,][,-segme]
   }else{dataSetV <- dataSet[,-segme]}
   
   ncTable <- ncol(dataSetV)
@@ -588,3 +588,63 @@ varImportance <- function(model, pred.data=model$trainingData, ..., scale=T)
 }
 
 R2 <- function(x,y){as.numeric(postResample(x, y)[2]) }
+
+
+
+graficoBoxplotMetricas <- function(metricas,ggtitle,colr="white"){
+  
+  library(reshape)
+  library(ggplot2)
+  library(agricolae)
+  library(car)
+  library(stringr)
+  library(cowplot)
+  
+  inpts <- row.names(metricas)
+  #inpts <- inpts[-length(inpts)]
+  #inpts <- c(inpts,"Variety")
+  metricas1 <- metricas
+  
+  metricas1 <- t(metricas1)
+  
+  
+  sorVars <- names(sort(apply(metricas1,2,median),decreasing = F))
+  
+  vSort <- as.data.frame(metricas1[,sorVars])
+  
+  newV <-  melt(vSort)
+  
+  noParameOut <- kruskal(newV$value,newV$variable,group = T)
+  
+  groupsData <- if(all(names(noParameOut$groups) %in% c("trt","means","M"))){
+    data.frame(noParameOut$groups$trt,noParameOut$groups$M)
+  }else{
+    noParameOut.groups.trt <- row.names(noParameOut$groups)
+    noParameOut.groups.M <- noParameOut$groups$groups
+    data.frame(noParameOut.groups.trt,noParameOut.groups.M)
+  }
+  
+  
+  
+  groupsData$noParameOut.groups.trt <- str_replace_all(groupsData$noParameOut.groups.trt, pattern=" ", repl="")
+  
+  groupsData$max <- sort(tapply(newV$value,newV$variable,max),decreasing = T)+4
+  
+  newV1 <- merge(newV,groupsData,by.x="variable",by.y="noParameOut.groups.trt",all.x=T,all.y=F)
+  
+  
+  m <- ggplot(newV1, aes(x=variable, y=value))
+  
+  m <- m + geom_boxplot(fill=colr) + ylab("Importance")+ xlab("Input variable")+
+    theme_bw() +scale_y_continuous(position = "top")+
+    ggtitle(ggtitle) +   theme(axis.text.x = element_text(angle=0, hjust=0.5, vjust=0),plot.title = element_text(vjust=3,size=10))+ 
+    coord_flip()+ geom_text(aes(y = max,label = noParameOut.groups.M))
+  
+  graficoFinal <- m
+  
+  return(graficoFinal)
+  
+}
+
+
+

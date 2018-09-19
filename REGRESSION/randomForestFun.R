@@ -188,43 +188,14 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
     }else{
         require(cowplot)
         #Comienzo boxplot
-        
-        newV <-  melt(t(v))[,-1]
-        
-        names(newV) <-  c("variable","value")
-        
-        medOrdenada <- names(with(newV,sort(tapply(value,variable,median))))
-        
-        newV$variable <- factor(newV$variable,levels=medOrdenada)
-        
-        noParameOut <- kruskal(newV$value,newV$variable,group = T)
-        
-        groupsData <- data.frame(noParameOut$groups$trt,noParameOut$groups$M)
-        
-        groupsData$noParameOut.groups.trt <- str_replace_all(groupsData$noParameOut.groups.trt, pattern=" ", repl="")
-        
-        maxDist <- {maxDis <- tapply(newV$value,newV$variable,max)+4.5;data.frame(nam=names(maxDis),max=maxDis)}
-        
-        groupsData <- merge(groupsData,maxDist,by.x="noParameOut.groups.trt",by.y="nam",all=T,sort=F)
-        
-        newV1 <- merge(newV,groupsData,by.x="variable",by.y="noParameOut.groups.trt",all.x=T,all.y=F,sort = F)
-        
-        
-        png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei, pointsize = 20)
-        m <- ggplot(newV1, aes(x=variable, y=value))
-        
-        m <- m + geom_boxplot(fill=col.grap) + ylab("Importance")+ 
-              xlab("Input variable")+theme_bw() + scale_y_continuous(position = "top")+
-            ggtitle(paste("Importance of variables\n(with a mean R2 of", perf1,
-            "%)")) + theme(axis.text.x = element_text(angle=0, hjust=0.5, 
-            vjust=0,size=sztxtx),plot.title = element_text(vjust=3,size=szmain),
-            axis.text.y =element_text(size = sztxty),
-            axis.title.x = element_text(size = szlbty),
-            axis.title.y = element_text(size = szlbtx))+ coord_flip()+
-            geom_text(aes(y = max,label = noParameOut.groups.M))
-        
-        print(m)
-        dev.off()
+      
+      ggtitle <- paste("Importance of variables \t (with a mean R2 of", round(perf1,2), "%)")
+      
+      g <- graficoBoxplotMetricas(v,ggtitle)
+      
+      png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei, pointsize = 20)
+       g
+      dev.off()
     }
     #Fin del grafico boxplot
     

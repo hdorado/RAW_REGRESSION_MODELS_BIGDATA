@@ -12,12 +12,25 @@ multiProfile <- function(data, profiles, variable,xlim0=NULL,pp.szmain=15,pp.szt
     names(mean) <- c("Mean", "Class", "Freq", "SE")
     
     limits <- transform(mean,lower = Mean - SE, upper=Mean + SE)
+
+    mean <- mean[order(mean$Mean,decreasing = F),]
     
-    m <- ggplot(mean, aes(x=Class, y=Mean, fill=Freq))
-    m <- m + geom_bar(stat="identity") + ylab("Mean effect on output")+
+    mean$Class <- as.character(mean$Class)
+    
+    mean$Class <- factor(mean$Class,levels = mean$Class )
+    
+    #levels(mean$Class) <- mean$Class
+    
+    mean$col <- 'green'
+    
+    mean$col[mean$Mean < 0] <- 'red'
+    
+    m <- ggplot(mean, aes(x=Class, y=Mean))
+    
+    m <- m + geom_bar(stat="identity",aes(alpha=Freq,fill=col))+scale_fill_manual(values=c('green','red'),guide=FALSE)+ ylab("Mean effect on output")+
       coord_flip() + geom_errorbar(aes(ymax = lower, ymin=upper), width=0.25,data=limits) +
       theme_bw() + ggtitle(paste("Individual influence of", variable, "(with", ncol(p), "profiles)")) +
-      scale_fill_gradient2("Count", low = "red", high = "green", midpoint=0)+
+     # scale_fill_gradient2("Count", low = "red", high = "green", midpoint=0)+
       theme(plot.title = element_text(vjust=3,size=pp.szmain),
             axis.text.x = element_text(size = pp.sztxtx),
             axis.text.y = element_text(size = pp.sztxty),
@@ -49,3 +62,4 @@ multiProfile <- function(data, profiles, variable,xlim0=NULL,pp.szmain=15,pp.szt
   print(partialDep)
   }
 }
+
