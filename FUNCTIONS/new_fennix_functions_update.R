@@ -201,7 +201,7 @@ createFolders <- function(dirFol,variety)
 descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
                         ylabel = "Rendimiento (kg/ha)",smooth=FALSE,
                         smoothInd=NULL,ghrp="box",res=NA,sztxt=15,szlbls = 15,
-                        colbox="skyblue",colpts="greenyellow",colsmot="red",
+                        colbox="deepskyblue",colpts="deepskyblue",colsmot="black",
                         szpts=4,szdts=1.5)
 {
   namsDataSet <- names(dataSet)  
@@ -257,13 +257,16 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
       if(!isTRUE(smooth))
       {
           
-        png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=775,height=280,res=res)
-        grid.arrange(plo,box,ncol = 2,top = textGrob(paste0(variety,
+       # png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=775,height=280,res=res)
+        ga <- grid.arrange(plo,box,ncol = 2,top = textGrob(paste0(variety,
                      " - ",namC), gp=gpar(cex=1.1,fontface = 'bold')))
-        dev.off()
+        
+        ggsave(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),ga,height = 4,width =8 )
+        
+        #dev.off()
       }else{
 
-          png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=775,height=280,res=res)
+        #  png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=775,height=280,res=res)
 
         lo <- suppressWarnings(loess(outputVar~cuantVar[,namC]))
         xl <- seq(min(cuantVar[,namC]),max(cuantVar[,namC]), (max(cuantVar[,namC]) - min(cuantVar[,namC]))/1000)
@@ -285,7 +288,7 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
       }
       if(ghrp=="box")
       {
-          grid.arrange(plo,box,ncol = 2,top = textGrob(paste0(variety,
+          ga1 <- grid.arrange(plo,box,ncol = 2,top = textGrob(paste0(variety,
                    " - ",namC), gp=gpar(cex=1.1,fontface = 'bold')))
     
         }else if(ghrp=="varPoints"){
@@ -301,17 +304,17 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
                                       size=szpts,shape = 21,alpha =0.6)
             plo1 <- plo1 + theme_bw()+ ylab(ylabel) + xlab(namC) +tme
             
-            grid.arrange(plo1,box,ncol = 2,top = textGrob(paste0(variety,
+            ga1 <- grid.arrange(plo1,box,ncol = 2,top = textGrob(paste0(variety,
             " - ",namC), gp=gpar(cex=1.1,fontface = 'bold')))  
 
             
       }else{stop("ghrp Invlid")}
 
-      dev.off()
+       ggsave(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),ga1,height = 4,width =8 )
     }
  
-  png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_Yield.png"),width=775,
-      height=280,res=res)
+#  png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_Yield.png"),width=775,
+ #     height=280,res=res)
   otpvar <- data.frame(x=outputVar)
   
   ydplot <- ggplot()+geom_histogram(aes(x=x),data=otpvar,
@@ -325,11 +328,10 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
       geom_boxplot(width = 0.3,fill=colbox)+xlab("")+ylab(ylabel)+tme
   
   
-  grid.arrange(ydplot,box,ncol = 2,top = textGrob(paste(variety,"_Yield"),
+  ga2 <- grid.arrange(ydplot,box,ncol = 2,top = textGrob(paste(variety,"_Yield"),
                 gp=gpar(cex=1.1,fontface = 'bold')))
   
- dev.off()
- 
+ ggsave(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_Yield.png"),ga2,height = 4,width =8 )
 
   summ <- completeSummary(dataSetV)
  
@@ -355,10 +357,13 @@ descriptiveGraphics <- function(variety,dataSet,inputs,segme,output,
                  ylab(ylabel)+
                  theme(axis.text.x = element_text(angle = 45, hjust = 1))
       
-      png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=775,height=280,res=res)
-       grid.arrange(dotplot,boxplot,ncol=2,top=textGrob(paste(variety,"_",namC),             
+      #png(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),width=775,height=280,res=res)
+      ga3 <-  grid.arrange(dotplot,boxplot,ncol=2,top=textGrob(paste(variety,"_",namC),             
                     gp=gpar(cex=1.1,fontface="bold")))
-      dev.off()
+      
+      ggsave(paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"_",namC,".png"),ga3,height = 4,width =8 )
+      
+      #dev.off()
       
       cat("\n", namC, "\n",file=paste0(variety,"/DESCRIPTIVE_ANALYSIS/",variety,"summaryVariables.csv"),append=T )
       

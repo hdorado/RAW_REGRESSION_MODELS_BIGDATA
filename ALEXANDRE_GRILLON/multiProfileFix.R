@@ -29,3 +29,17 @@ multiProfile <- function(data, profiles, variable,xlim0=NULL,xla=variable,yla=na
     lines(x=row.names(p), y=rowMeans(p), type="l", col="green", lwd=4)
   }
 }
+
+load('workSpace.RData')
+
+# una vez cargas el workspace, dejas data y profile quietos en la siguiente funci?n y debes
+# colocar en variable el nombre de la variable del perfil que quieres generar, xla es solo para la etiqueta
+
+profiles <- outputs$profiles
+
+data <- 
+
+multiProfile(datos_completos[,-27], profiles,variable = 'variety')
+
+ggsave('variety.png',g,height = 9,width =8 )
+

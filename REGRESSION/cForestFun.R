@@ -59,11 +59,12 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
 
     
     performance <- as.numeric(postResample(predict(model, testing), testing[,nOutPut])[2])*100
-
+    
+    performanceRMSE <- as.numeric(postResample(predict(model, testing), testing[,nOutPut])[1])
     
     vaRelevance <- varImp(model, scale=F, conditional=T)$importance
     
-    return(list(model,performance,vaRelevance))
+    return(list(model,performance,vaRelevance,performanceRMSE))
     
   }
   # close(pb) 
@@ -97,7 +98,7 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
     cForestModels <- sfLapply(1:nb.it,cForestCaret)
 
     allModels <- lapply(cForestModels,function(x){x[[1]]})
-    #allRMSE   <- unlist(lapply(allModelsAndRMSE,function(x){x[[2]]}))
+    allRMSE   <- unlist(lapply(cForestModels,function(x){x[[4]]}))
     performance     <- unlist(lapply(cForestModels,function(x){x[[2]]}))
     relevances    <- lapply(cForestModels,function(x){x[[3]]})
     
@@ -259,7 +260,10 @@ conditionalForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),
       } else{print(paste("Few profiles references for:",namSort[i]))}
     }
     
-    if(saveWS==T){save(list = ls(all = TRUE), file = paste0(dirSave[j],"workSpace.RData"))}else{}
+    if(saveWS==T){
+      outputs = list(data=data,profiles=profiles,mean=mean,bestMod=bestMod)
+      save(outputs, file = paste0(dirSave[j],"workSpace.RData"))
+    }else{}
     
   }
   sfStop()

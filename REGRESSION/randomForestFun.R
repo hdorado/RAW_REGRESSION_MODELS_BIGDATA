@@ -47,9 +47,11 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
     
     performance <- as.numeric(postResample(predict(model, testing), testing[,nOutPut])[2])*100
     
+    performanceRMSE <- as.numeric(postResample(predict(model, testing), testing[,nOutPut])[1])
+    
     vaRelevance <- varImp(model, scale=T)$importance
     
-    return(list(model,performance,vaRelevance))
+    return(list(model,performance,vaRelevance,performanceRMSE))
     
   }
   # close(pb) 
@@ -84,10 +86,11 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
     print(Sys.time()-start)
     
     allModels <- lapply(cForestModels,function(x){x[[1]]})
-    #allRMSE   <- unlist(lapply(allModelsAndRMSE,function(x){x[[2]]}))
+    allRMSE   <- unlist(lapply(cForestModels,function(x){x[[4]]}))
     performance     <- unlist(lapply(cForestModels,function(x){x[[2]]}))
     relevances    <- lapply(cForestModels,function(x){x[[3]]})
     
+    bestMod <- allModels[[which.min(allRMSE)]]
     
     currentVarImp <- do.call(cbind,relevances)
     
@@ -168,8 +171,8 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
         errBars <- transform(stadistc, lower=Mean-se,upper=Mean+se )
         
         
-        png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei,
-            pointsize = 20,res=80)
+        #png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei,
+         #   pointsize = 20,res=80)
         
         m <- ggplot(mean, aes(x=Variable, y=Mean))
         m <- m + geom_bar(stat="identity", width=0.5, fill="slategray1") +
@@ -182,9 +185,11 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
              axis.text.x =element_text(size = sztxtx),
              axis.title.x = element_text(size = szlbty),
              axis.title.y = element_text(size = szlbtx))
-         suppressWarnings(print(m))
+         #suppressWarnings(print(m))
         
-        dev.off()
+         ggsave(paste0(dirSave[j],"InputRelvance.png"),m,height = 8,width = 6.5)
+         
+        #dev.off()
     }else{
         require(cowplot)
         #Comienzo boxplot
@@ -193,9 +198,9 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
       
       g <- graficoBoxplotMetricas(v,ggtitle)
       
-      png(paste0(dirSave[j],"InputRelvance.png"),width = wid, hei = hei, pointsize = 20)
-       g
-      dev.off()
+      
+      ggsave(paste0(dirSave[j],"InputRelvance.png"),g,height = 8,width = 6.5)
+      
     }
     #Fin del grafico boxplot
     
@@ -222,8 +227,12 @@ randomForestFun <- function(variety,dirLocation=paste0(getwd(),"/"),saveWS=F,
         } else{print(paste("Few profiles references for:",namSort[i]))}
     }
     
-    if(saveWS==T){save(list = ls(all = TRUE), file = paste0(dirSave[j],"workSpace.RData"))}else{}
-  
+    
+    
+    if(saveWS==T){
+      outputs = list(data=data,profiles=profiles,mean=mean,bestMod=bestMod)
+      save(outputs, file = paste0(dirSave[j],"workSpace.RData"))
+      }else{}
 
   }
   sfStop()

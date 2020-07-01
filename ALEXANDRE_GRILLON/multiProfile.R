@@ -62,4 +62,10 @@ multiProfile <- function(data, profiles, variable,xlim0=NULL,pp.szmain=15,pp.szt
   }
 }
 
+#profiles <- outputs$profiles
 
+
+  
+#g <- multiProfile(datos_completos[,-27], profiles,variable = 'variety')
+
+#ggsave('vairiety_profile.png',height = ,width = )
